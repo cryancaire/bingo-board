@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Board</title>
+</head>
+<style>
+    .bingo-board {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 10px;
+    }
+
+    .bingo-cell {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #ccc;
+        background-color: #f9f9f9;
+        text-align: center;
+        font-family: sans-serif;
+        padding: 5px;
+        word-break: break-word;
+        font-size: 14px;
+    }
+
+    .selected {
+        background-color: #ffcc00;
+    }
+
+    @media (max-width: 400px) {
+        .bingo-board {
+            gap: 5px;
+        }
+
+        .bingo-cell {
+            font-size: 12px;
+        }
+    }
+</style>
+
+<body>
+    <h1 style="text-align: center;">Bingo Board</h1>
+    <div class="bingo-board">
+        <% board.forEach(function(row) { %>
+            <% row.forEach(function(cell) { %>
+                <div class="bingo-cell">
+                    <%= cell %>
+                </div>
+                <% }); %>
+                    <% }); %>
+    </div>
+
+    <script>
+        const cells = document.querySelectorAll('.bingo-cell');
+
+        for (const cell of cells) {
+            cell.addEventListener('click', function () {
+                this.classList.toggle('selected');
+            });
+        }
+    </script>
+</body>
+
+</html>
