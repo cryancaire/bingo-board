@@ -80,6 +80,7 @@
     <script>
         var socket = io();
         const boardId = '<%= boardId %>'; // Get board ID from server-rendered template
+        const globalSeed = '<%= seed %>';
 
         // Join the specific board room
         socket.emit('joinBoard', boardId);
@@ -90,17 +91,19 @@
             cell.addEventListener('click', function () {
                 const id = this.id;
                 const status = this.classList.contains('selected') ? 'selected' : 'unselected';
-                socket.emit('toggleCellFromBrowser', id, status, boardId);
-
+                if (status === 'unselected') {
+                    this.classList.add('selected');
+                } else {
+                    this.classList.remove('selected');
+                }
+                socket.emit('toggleCellFromBrowser', id, status, boardId, globalSeed);
             });
         }
 
-        socket.on('toggleCell', function (id) {
-            // Legacy support if needed, but we use toggleCellFromBackend
-        });
-
-        socket.on('toggleCellFromBackend', function (id, status) {
-            console.log('toggleCellFromBackend', id, status);
+        socket.on('toggleCellFromBackend', function (id, status, seed) {
+            console.log(seed);
+            console.log(globalSeed);
+            if (seed !== globalSeed) return;
             const cell = document.getElementById(id);
             if (status === 'unselected') {
                 cell.classList.add('selected');
