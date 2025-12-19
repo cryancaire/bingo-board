@@ -7,7 +7,7 @@ const io = new Server(server);
 const path = require('path')
 const buildBoard = require('./boardBuilder');
 const port = 3000;
-const db = require('./database');
+const supabase = require('./database');
 const seedrandom = require('seedrandom');
 
 app.set('views', path.join(__dirname, 'views'));
@@ -16,132 +16,170 @@ app.set('view engine', 'ejs');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database Initialization and Seeding
-db.serialize(() => {
-    db.run("CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT)");
-    
-    db.get("SELECT count(*) as count FROM items", (err, row) => {
-        if (err) return console.error(err.message);
-        if (row.count === 0) {
-            console.log("Seeding database with initial items...");
-            const stmt = db.prepare("INSERT INTO items (text) VALUES (?)");
-            const bingoItems = [
-                "Double Jump", "Ice Level", "Escort Mission", "Boss Phase 2", "Health Potion",
-                "Tutorial", "Unskippable Cutscene", "Fetch Quest", "Silent Protagonist", "QTE",
-                "Water Level", "Exploding Barrel", "Hidden Wall", "Save Point", "New Game+",
-                "Long Credits", "Loot Box", "XP Grind", "Skill Tree", "NPC Blocking Path",
-                "Respawning Enemies", "Fast Travel", "Game Over", "Victory Fanfare"
-            ];
-            bingoItems.forEach(text => stmt.run(text));
-            stmt.finalize();
-        }
-    });
-});
+// Serve static files (if any, like CSS/JS) - implicitly needed for general web apps, though not explicitly requested, good practice.
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
+
+// Dashboard / Landing Page
 app.get('/', (req, res) => {
-    // Fetch ALL items, then shuffle in JS using seed
-    db.all("SELECT text FROM items", (err, rows) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send("Database Error");
-        }
-        
-        // Determine seed: use query param or generate random string
-        const seed = req.query.seed || Math.random().toString(36).substring(7);
-        const rng = seedrandom(seed);
-        
-        // Shuffle items with seeded RNG (Fisher-Yates)
-        const items = rows.map(r => ({ text: r.text, selected: false }));
-        for (let i = items.length - 1; i > 0; i--) {
-            const j = Math.floor(rng() * (i + 1));
-            [items[i], items[j]] = [items[j], items[i]];
-        }
-        
-        const board = buildBoard(items);
-        res.render('board', { board: board, seed: seed });
+    res.render('dashboard', {
+        supabaseUrl: process.env.SUPABASE_URL,
+        supabaseKey: process.env.SUPABASE_KEY
     });
 });
 
-app.get('/admin', (req, res) => {
-    res.render('admin');
+// View a specific Board
+app.get('/board/:id', async (req, res) => {
+    const boardId = req.params.id;
+    const { seed } = req.query;
+
+    // Fetch board details to ensure it exists
+    const { data: boardData, error: boardError } = await supabase
+        .from('bingo_boards')
+        .select('*')
+        .eq('id', boardId)
+        .single();
+
+    if (boardError || !boardData) {
+        console.error("Error fetching board:", boardError);
+        return res.status(404).send("Board not found");
+    }
+
+    // Fetch items for this board
+    const { data: itemsData, error: itemsError } = await supabase
+        .from('bingo_items')
+        .select('text')
+        .eq('board_id', boardId);
+
+    if (itemsError) {
+        console.error("Error fetching items:", itemsError);
+        return res.status(500).send("Database Error");
+    }
+
+    // Determine seed: use query param or generate random string
+    const currentSeed = seed || Math.random().toString(36).substring(7);
+    const rng = seedrandom(currentSeed);
+    
+    // Shuffle items with seeded RNG (Fisher-Yates)
+    const items = itemsData.map(r => ({ text: r.text, selected: false }));
+    for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+    }
+    
+    const board = buildBoard(items);
+    res.render('board', { 
+        board: board, 
+        seed: currentSeed, 
+        boardTitle: boardData.title, 
+        boardId: boardId,
+        supabaseUrl: process.env.SUPABASE_URL,
+        supabaseKey: process.env.SUPABASE_KEY
+    });
 });
 
 // API Routes
-app.get('/api/items', (req, res) => {
-    db.all("SELECT * FROM items", (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+
+// Get all boards for a user (This might need Auth context, currently just verifying frontend sends token or we handle it client-side)
+// Actually, with Supabase, client-side requests are often easier for "my stuff", but since we are serving Views, we might want an API for the dashboard to fetch lists.
+// Let's assume the dashboard will fetch via client-side Supabase for auth simplicity, OR we proxy.
+// For now, let's keep the backend simple and maybe just helper APIs.
+
+// Create a new board
+app.post('/api/boards', async (req, res) => {
+    const { title, user_id } = req.body; // In real app, get user_id from verified token
+    if (!title || !user_id) return res.status(400).json({ error: "Title and User ID required" });
+
+    const { data, error } = await supabase
+        .from('bingo_boards')
+        .insert([{ title, user_id }])
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
-app.post('/api/items', (req, res) => {
+// Get items for a board (Editor interface)
+app.get('/api/boards/:id/items', async (req, res) => {
+    const { id } = req.params;
+    const { data, error } = await supabase
+        .from('bingo_items')
+        .select('*')
+        .eq('board_id', id);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Add item to board
+app.post('/api/boards/:id/items', async (req, res) => {
+    const { id } = req.params;
     const { text } = req.body;
+    
     if (!text) return res.status(400).json({ error: "Text is required" });
-    
-    db.run("INSERT INTO items (text) VALUES (?)", [text], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ id: this.lastID, text });
-        // Optionally emit event if we want live updates
-    });
+
+    const { data, error } = await supabase
+        .from('bingo_items')
+        .insert([{ board_id: id, text }])
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
-app.put('/api/items/:id', (req, res) => {
+// Update item
+app.put('/api/items/:id', async (req, res) => {
+    const { id } = req.params;
     const { text } = req.body;
+
+    const { data, error } = await supabase
+        .from('bingo_items')
+        .update({ text })
+        .eq('id', id)
+        .select();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// Delete item
+app.delete('/api/items/:id', async (req, res) => {
     const { id } = req.params;
-    
-    db.run("UPDATE items SET text = ? WHERE id = ?", [text, id], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ changes: this.changes });
-    });
+    const { error } = await supabase
+        .from('bingo_items')
+        .delete()
+        .eq('id', id);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: "Deleted" });
 });
 
-app.delete('/api/items/:id', (req, res) => {
-    const { id } = req.params;
-    db.run("DELETE FROM items WHERE id = ?", id, function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ changes: this.changes });
-    });
-});
 
-// Socket.io logic (Note: cell toggling is global! Seeded boards share the same socket namespace currently, 
-// so clicking a cell updates ALL connected clients even if they have different boards. 
-// This is likely unintended behavior for a multi-room setup, but for this specific request 
-// we are only handling generation. I will leave socket logic as-is unless requested otherwise.)
-app.get('/toggleCell/:id', (req, res) => {
-    const { id } = req.params;
-    io.emit('toggleCell', id);
-    res.json({ id });
-});
-
-app.get('/selectCell/:id', (req, res) => {
-    const { id } = req.params;
-    io.emit('selectCell', id);
-    res.json({ id });
-});
-
-app.get('/resetBoard', (req, res) => {
-    io.emit('resetBoard');
-    res.json({ message : "resetBoard"});
-});
-
-app.get('/toggleVisibility', (req, res) => {
-    io.emit('toggleVisibility');
-    res.json({ message : "toggleVisibility"});
-});
-
+// Socket.io logic
+// Note: We need to handle rooms now so interactions on one board don't affect others!
+// Room ID = Board ID
 io.on('connection', (socket) => {
     console.log('a user connected');
+
+    socket.on('joinBoard', (boardId) => {
+        socket.join(boardId);
+        console.log(`User joined board room: ${boardId}`);
+    });
+
     socket.on('disconnect', () => {
         console.log('user disconnected');
     });
 
-    socket.on('toggleCellFromBrowser', function (id, status) {
-        console.log('toggleCellFromBrowser', id, status);
-        io.emit('toggleCellFromBackend', id, status);
+    socket.on('toggleCellFromBrowser', function (id, status, boardId) {
+        console.log('toggleCellFromBrowser', id, status, boardId);
+        // Broadcast only to that board's room
+        io.to(boardId).emit('toggleCellFromBackend', id, status);
     });
 });
 
 server.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Bingo App listening on port ${port}`);
 });

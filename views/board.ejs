@@ -79,35 +79,24 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         var socket = io();
+        const boardId = '<%= boardId %>'; // Get board ID from server-rendered template
+
+        // Join the specific board room
+        socket.emit('joinBoard', boardId);
+
         const cells = document.querySelectorAll('.bingo-cell');
 
         for (const cell of cells) {
             cell.addEventListener('click', function () {
                 const id = this.id;
                 const status = this.classList.contains('selected') ? 'selected' : 'unselected';
-                socket.emit('toggleCellFromBrowser', id, status);
+                socket.emit('toggleCellFromBrowser', id, status, boardId);
 
             });
         }
 
         socket.on('toggleCell', function (id) {
-            const board = document.querySelector('.bingo-board');
-            board.classList.remove('hide');
-
-            const cell = document.getElementById(id);
-            cell.classList.toggle('selected');
-
-            setTimeout(() => {
-                board.classList.add('hide');
-            }, 2000);
-        });
-
-        socket.on('selectCell', function (id) {
-            const board = document.querySelector('.bingo-board');
-            board.classList.remove('hide');
-
-            const cell = document.getElementById(id);
-            cell.classList.add('selected');
+            // Legacy support if needed, but we use toggleCellFromBackend
         });
 
         socket.on('toggleCellFromBackend', function (id, status) {
@@ -134,7 +123,10 @@
         });
     </script>
     <div style="text-align: center; margin-top: 10px; font-family: sans-serif; color: #666;">
-        Share this board: <a href="/?seed=<%= seed %>" id="share-link">link</a> (Seed: <%= seed %>)
+        <h1>
+            <%= boardTitle %>
+        </h1>
+        Share this board: <a href="/board/<%= boardId %>?seed=<%= seed %>" id="share-link">link</a> (Seed: <%= seed %>)
     </div>
 </body>
 
