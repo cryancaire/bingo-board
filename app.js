@@ -173,10 +173,10 @@ io.on('connection', (socket) => {
         console.log('user disconnected');
     });
 
-    socket.on('toggleCellFromBrowser', function (id, status, boardId) {
+    socket.on('toggleCellFromBrowser', function (id, status, boardId, seed) {
         console.log('toggleCellFromBrowser', id, status, boardId);
         // Broadcast only to that board's room
-        io.to(boardId).emit('toggleCellFromBackend', id, status);
+        io.to(boardId).emit('toggleCellFromBackend', id, status, seed);
     });
 });
 
