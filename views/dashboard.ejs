@@ -348,7 +348,7 @@
         }
 
         async function updateItem(id, text, btn) {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('bingo_items')
                 .update({ text })
                 .eq('id', id);
@@ -363,7 +363,7 @@
 
         async function deleteItem(id) {
             if (!confirm("Delete item?")) return;
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('bingo_items')
                 .delete()
                 .eq('id', id);
@@ -377,7 +377,7 @@
             const input = document.getElementById('new-item-text');
             const text = input.value;
 
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('bingo_items')
                 .insert([{ board_id: currentBoardId, text: text }]);
 
