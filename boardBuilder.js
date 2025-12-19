@@ -15,11 +15,11 @@ function buildBoard(items) {
         for (let c = 0; c < size; c++) {
             const id = `r${r}-c${c}`;
             if (r === 2 && c === 2) {
-                row.push({ id, text: "Free" });
+                row.push({ id, text: "Free", selected: true });
             } else {
                 // Use provided item or fallback if we run out
-                const text = items && items[itemIndex] ? items[itemIndex] : `Square ${itemIndex + 1}`;
-                row.push({ id, text });
+                const item = items && items[itemIndex] ? items[itemIndex] : { text: `Square ${itemIndex + 1}`, selected: false };
+                row.push({ id, text: item.text, selected: item.selected });
                 itemIndex++;
             }
         }

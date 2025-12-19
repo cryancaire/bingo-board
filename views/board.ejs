@@ -66,7 +66,7 @@
     <div class="bingo-board">
         <% board.forEach(function(row) { %>
             <% row.forEach(function(cell) { %>
-                <div class="bingo-cell" id="<%= cell.id %>">
+                <div class="bingo-cell <%= cell.selected ? 'selected' : '' %>" id="<%= cell.id %>">
                     <span class="cell-id">
                         <%= cell.id %>
                     </span>
@@ -83,7 +83,10 @@
 
         for (const cell of cells) {
             cell.addEventListener('click', function () {
-                this.classList.toggle('selected');
+                const id = this.id;
+                const status = this.classList.contains('selected') ? 'selected' : 'unselected';
+                socket.emit('toggleCellFromBrowser', id, status);
+
             });
         }
 
@@ -111,9 +114,27 @@
             }, 2000);
         });
 
+        socket.on('toggleCellFromBackend', function (id, status) {
+            console.log('toggleCellFromBackend', id, status);
+            const cell = document.getElementById(id);
+            if (status === 'unselected') {
+                cell.classList.add('selected');
+            } else {
+                cell.classList.remove('selected');
+            }
+        });
+
         socket.on('toggleVisibility', function () {
             const board = document.querySelector('.bingo-board');
             board.classList.toggle('hide');
+        });
+
+        socket.on('resetBoard', function () {
+            const board = document.querySelector('.bingo-board');
+            const cells = document.querySelectorAll('.bingo-cell');
+            for (const cell of cells) {
+                cell.classList.remove('selected');
+            }
         });
     </script>
 </body>

@@ -12,19 +12,34 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 const bingoItems = [
-    "Double Jump", "Ice Level", "Escort Mission", "Boss Phase 2",
-    "Health Potion", "Tutorial", "Unskippable Cutscene", "Fetch Quest",
-    "Silent Protagonist", "QTE", "Water Level", "Exploding Barrel",
-    "Hidden Wall", "Save Point", "New Game+", "Long Credits",
-    "Loot Box", "XP Grind", "Skill Tree", "NPC Blocking Path",
-    "Respawning Enemies", "Fast Travel", "Game Over", "Victory Fanfare"
+    { text: "Double Jump", selected: false },
+    { text: "Ice Level", selected: false },
+    { text: "Escort Mission", selected: false },
+    { text: "Boss Phase 2", selected: false },
+    { text: "Health Potion", selected: true }, // Example selected item
+    { text: "Tutorial", selected: false },
+    { text: "Unskippable Cutscene", selected: false },
+    { text: "Fetch Quest", selected: false },
+    { text: "Silent Protagonist", selected: false },
+    { text: "QTE", selected: false },
+    { text: "Water Level", selected: false },
+    { text: "Exploding Barrel", selected: false },
+    { text: "Hidden Wall", selected: false },
+    { text: "Save Point", selected: false },
+    { text: "New Game+", selected: false },
+    { text: "Long Credits", selected: false },
+    { text: "Loot Box", selected: false },
+    { text: "XP Grind", selected: false },
+    { text: "Skill Tree", selected: false },
+    { text: "NPC Blocking Path", selected: false },
+    { text: "Respawning Enemies", selected: false },
+    { text: "Fast Travel", selected: false },
+    { text: "Game Over", selected: false },
+    { text: "Victory Fanfare", selected: false }
 ];
 const board = buildBoard(bingoItems);
 
 app.get('/', (req, res) => {
-    // Dummy data for the board (24 items needed)
-    
-    
     res.render('board', { board: board });
 });
 
@@ -40,6 +55,11 @@ app.get('/selectCell/:id', (req, res) => {
     res.json({ id });
 });
 
+app.get('/resetBoard', (req, res) => {
+    io.emit('resetBoard');
+    res.json({ message : "resetBoard"});
+});
+
 app.get('/toggleVisibility', (req, res) => {
     io.emit('toggleVisibility');
     res.json({ message : "toggleVisibility"});
@@ -49,6 +69,11 @@ io.on('connection', (socket) => {
     console.log('a user connected');
     socket.on('disconnect', () => {
         console.log('user disconnected');
+    });
+
+    socket.on('toggleCellFromBrowser', function (id, status) {
+        console.log('toggleCellFromBrowser', id, status);
+        io.emit('toggleCellFromBackend', id, status);
     });
 });
 
