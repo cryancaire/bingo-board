@@ -13,12 +13,13 @@ function buildBoard(items) {
     for (let r = 0; r < size; r++) {
         const row = [];
         for (let c = 0; c < size; c++) {
+            const id = `r${r}-c${c}`;
             if (r === 2 && c === 2) {
-                row.push("Free");
+                row.push({ id, text: "Free" });
             } else {
                 // Use provided item or fallback if we run out
-                const val = items && items[itemIndex] ? items[itemIndex] : `Square ${itemIndex + 1}`;
-                row.push(val);
+                const text = items && items[itemIndex] ? items[itemIndex] : `Square ${itemIndex + 1}`;
+                row.push({ id, text });
                 itemIndex++;
             }
         }

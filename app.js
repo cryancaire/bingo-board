@@ -1,5 +1,9 @@
 const express = require('express');
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
 const path = require('path')
 const buildBoard = require('./boardBuilder');
 const port = 3000;
@@ -24,6 +28,19 @@ app.get('/', (req, res) => {
     res.render('board', { board: board });
 });
 
-app.listen(port, () => {
+app.get('/toggle/:id', (req, res) => {
+    const { id } = req.params;
+    io.emit('toggleCell', id);
+    res.json({ id });
+});
+
+io.on('connection', (socket) => {
+    console.log('a user connected');
+    socket.on('disconnect', () => {
+        console.log('user disconnected');
+    });
+});
+
+server.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });

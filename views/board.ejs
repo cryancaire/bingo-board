@@ -27,6 +27,18 @@
         padding: 5px;
         word-break: break-word;
         font-size: 14px;
+        position: relative;
+        /* Needed for absolute positioning of ID */
+    }
+
+    .cell-id {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        font-size: 8px;
+        color: #888;
+        pointer-events: none;
+        /* Don't interfere with clicks */
     }
 
     .selected {
@@ -49,14 +61,19 @@
     <div class="bingo-board">
         <% board.forEach(function(row) { %>
             <% row.forEach(function(cell) { %>
-                <div class="bingo-cell">
-                    <%= cell %>
+                <div class="bingo-cell" id="<%= cell.id %>">
+                    <span class="cell-id">
+                        <%= cell.id %>
+                    </span>
+                    <%= cell.text %>
                 </div>
                 <% }); %>
                     <% }); %>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
+        var socket = io();
         const cells = document.querySelectorAll('.bingo-cell');
 
         for (const cell of cells) {
@@ -64,6 +81,11 @@
                 this.classList.toggle('selected');
             });
         }
+
+        socket.on('toggleCell', function (id) {
+            const cell = document.getElementById(id);
+            cell.classList.toggle('selected');
+        });
     </script>
 </body>
 
