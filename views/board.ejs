@@ -7,6 +7,10 @@
     <title>Bingo Board</title>
 </head>
 <style>
+    .hide {
+        display: none !important;
+    }
+
     .bingo-board {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
@@ -84,6 +88,11 @@
         socket.on('toggleCell', function (id) {
             const cell = document.getElementById(id);
             cell.classList.toggle('selected');
+        });
+
+        socket.on('toggleVisibility', function () {
+            const board = document.querySelector('.bingo-board');
+            board.classList.toggle('hide');
         });
     </script>
 </body>

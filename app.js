@@ -28,10 +28,15 @@ app.get('/', (req, res) => {
     res.render('board', { board: board });
 });
 
-app.get('/toggle/:id', (req, res) => {
+app.get('/toggleCell/:id', (req, res) => {
     const { id } = req.params;
     io.emit('toggleCell', id);
     res.json({ id });
+});
+
+app.get('/toggleVisibility', (req, res) => {
+    io.emit('toggleVisibility');
+    res.json({ message : "toggleVisibility"});
 });
 
 io.on('connection', (socket) => {
