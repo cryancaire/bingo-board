@@ -108,10 +108,6 @@
 
             const cell = document.getElementById(id);
             cell.classList.add('selected');
-
-            setTimeout(() => {
-                board.classList.add('hide');
-            }, 2000);
         });
 
         socket.on('toggleCellFromBackend', function (id, status) {

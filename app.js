@@ -16,7 +16,7 @@ const bingoItems = [
     { text: "Ice Level", selected: false },
     { text: "Escort Mission", selected: false },
     { text: "Boss Phase 2", selected: false },
-    { text: "Health Potion", selected: true }, // Example selected item
+    { text: "Health Potion", selected: false },
     { text: "Tutorial", selected: false },
     { text: "Unskippable Cutscene", selected: false },
     { text: "Fetch Quest", selected: false },
