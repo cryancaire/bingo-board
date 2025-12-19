@@ -34,6 +34,12 @@ app.get('/toggleCell/:id', (req, res) => {
     res.json({ id });
 });
 
+app.get('/selectCell/:id', (req, res) => {
+    const { id } = req.params;
+    io.emit('selectCell', id);
+    res.json({ id });
+});
+
 app.get('/toggleVisibility', (req, res) => {
     io.emit('toggleVisibility');
     res.json({ message : "toggleVisibility"});

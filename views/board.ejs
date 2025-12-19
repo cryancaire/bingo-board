@@ -7,11 +7,15 @@
     <title>Bingo Board</title>
 </head>
 <style>
-    .hide {
-        display: none !important;
+    .bingo-board.hide {
+        opacity: 0;
+        visibility: hidden;
     }
 
     .bingo-board {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
         display: grid;
         grid-template-columns: repeat(5, 1fr);
         max-width: 600px;
@@ -32,7 +36,6 @@
         word-break: break-word;
         font-size: 14px;
         position: relative;
-        /* Needed for absolute positioning of ID */
     }
 
     .cell-id {
@@ -42,7 +45,6 @@
         font-size: 8px;
         color: #888;
         pointer-events: none;
-        /* Don't interfere with clicks */
     }
 
     .selected {
@@ -86,8 +88,27 @@
         }
 
         socket.on('toggleCell', function (id) {
+            const board = document.querySelector('.bingo-board');
+            board.classList.remove('hide');
+
             const cell = document.getElementById(id);
             cell.classList.toggle('selected');
+
+            setTimeout(() => {
+                board.classList.add('hide');
+            }, 2000);
+        });
+
+        socket.on('selectCell', function (id) {
+            const board = document.querySelector('.bingo-board');
+            board.classList.remove('hide');
+
+            const cell = document.getElementById(id);
+            cell.classList.add('selected');
+
+            setTimeout(() => {
+                board.classList.add('hide');
+            }, 2000);
         });
 
         socket.on('toggleVisibility', function () {
